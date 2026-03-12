@@ -206,6 +206,18 @@ All SQL queries use parameterized statements (`?` placeholders). No string inter
 
 No instances of `eval()`, `new Function()`, or `dangerouslySetInnerHTML` were found in the codebase. No WebView usage was detected.
 
+### 5.5 Path Traversal — Protected
+
+**File:** `src/services/modelManager/index.ts`
+
+The model manager validates that model file paths stay within the app's designated models directory, preventing path traversal attacks:
+
+```typescript
+if (!model.filePath.startsWith(this.modelsDir)) {
+  throw new Error('Invalid model path: outside app directory');
+}
+```
+
 ---
 
 ## 6. LOW — Mobile Platform Security
@@ -216,6 +228,7 @@ No instances of `eval()`, `new Function()`, or `dangerouslySetInnerHTML` were fo
 - Network security config enforces HTTPS by default
 - Appropriate permission scoping (e.g., `WRITE_EXTERNAL_STORAGE` maxSdkVersion=28)
 - `exported="true"` on `DownloadCompleteBroadcastReceiver` is required for system broadcast but should be verified that it doesn't expose sensitive data
+- **Download host whitelist**: The native `DownloadManagerModule.kt` restricts downloads to a hardcoded whitelist (`huggingface.co`, `cdn-lfs.huggingface.co`, `cas-bridge.xethub.hf.co`), preventing arbitrary downloads — a strong supply chain control
 
 ### 6.2 iOS Configuration — Good
 
