@@ -255,6 +255,18 @@ No code modifications or backdoors.
 
 The `web_search` tool (`handlers.ts:53-83`) scrapes Brave Search HTML results rather than using an API. This is fragile and could break with HTML changes. It also potentially violates Brave's ToS.
 
+### 7.4 Missing iOS Camera Permission
+
+The app includes `react-native-image-picker` which supports camera capture, but `Info.plist` does not include `NSCameraUsageDescription`. If camera mode is triggered, the app will crash on iOS. Either add the permission string or ensure camera capture is disabled in the picker options.
+
+### 7.5 No Data Retention or Bulk Deletion
+
+There is no data retention policy or automatic pruning of conversation history. Users can delete individual conversations but there is no bulk export, bulk delete, or automatic expiry mechanism. For GDPR compliance (if the app is distributed in the EU), consider adding data export/portability and "right to be forgotten" functionality.
+
+### 7.6 No Conversation Data Encryption at Rest
+
+While the app's privacy messaging states "All offline. Zero data leaves your device," conversations stored in AsyncStorage and documents in the RAG SQLite database are unencrypted on disk. On a rooted/jailbroken device (or via device backup extraction), all conversation content is readable in plaintext.
+
 ---
 
 ## Prioritized Recommendations
