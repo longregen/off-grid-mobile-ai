@@ -46,6 +46,7 @@ jest.mock('../../../src/stores', () => ({
 
 jest.mock('../../../src/services/httpClient', () => ({
   isPrivateNetworkEndpoint: jest.fn(() => true),
+  enforceHttps: jest.fn((url: string) => url),
 }));
 
 jest.mock('../../../src/theme', () => ({

@@ -12,6 +12,7 @@ import * as httpClient from '../../../src/services/httpClient';
 jest.mock('../../../src/services/httpClient', () => ({
   testEndpoint: jest.fn(),
   detectServerType: jest.fn(),
+  enforceHttps: jest.fn((url: string) => url),
 }));
 
 // Mock AsyncStorage
