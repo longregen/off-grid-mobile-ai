@@ -14,6 +14,7 @@ import {
   RemoteModel,
   ServerTestResult,
 } from '../types';
+import { enforceHttps } from '../services/httpClient';
 import logger from '../utils/logger';
 import { generateId } from '../utils/generateId';
 import {
@@ -91,6 +92,7 @@ export const useRemoteServerStore = create<RemoteServerState>()(
         const id = generateId();
         const server: RemoteServer = {
           ...serverData,
+          endpoint: enforceHttps(serverData.endpoint),
           id,
           createdAt: new Date().toISOString(),
         };

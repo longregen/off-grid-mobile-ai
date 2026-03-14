@@ -9,7 +9,7 @@ import logger from '../utils/logger';
 import { createSSELineProcessor } from './httpClientSSE';
 
 export { parseOpenAIMessage, parseAnthropicMessage, parseSSEStream, parseSSEFromText } from './httpClientSSE';
-export { imageToBase64DataUrl, isPrivateNetworkEndpoint, testEndpoint, detectServerType } from './httpClientUtils';
+export { imageToBase64DataUrl, isPrivateNetworkEndpoint, enforceHttps, testEndpoint, detectServerType } from './httpClientUtils';
 
 /** SSE event from streaming response */
 export interface SSEEvent {

@@ -5,6 +5,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
@@ -31,16 +32,39 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
   const [isVerifying, setIsVerifying] = useState(false);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
   const [alertState, setAlertState] = useState<AlertState>(initialAlertState);
+  const [biometricLabel, setBiometricLabel] = useState<string | null>(null);
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const {
     failedAttempts,
+    biometricEnabled,
     recordFailedAttempt,
     resetFailedAttempts,
     checkLockout,
     getLockoutRemaining,
   } = useAuthStore();
+
+  // Check biometric availability and attempt auto-unlock on mount
+  useEffect(() => {
+    const initBiometric = async () => {
+      if (!biometricEnabled) return;
+
+      const { available, biometryType } = await authService.isBiometricAvailable();
+      if (!available) return;
+
+      setBiometricLabel(authService.getBiometricLabel(biometryType));
+
+      // Auto-prompt biometric on mount
+      const success = await authService.authenticateWithBiometric();
+      if (success) {
+        resetFailedAttempts();
+        onUnlock();
+      }
+    };
+
+    initBiometric();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check and update lockout timer
   useEffect(() => {
@@ -56,6 +80,16 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
     const interval = setInterval(updateLockout, 1000);
     return () => clearInterval(interval);
   }, [checkLockout, getLockoutRemaining]);
+
+  const handleBiometricUnlock = useCallback(async () => {
+    if (checkLockout()) return;
+
+    const success = await authService.authenticateWithBiometric();
+    if (success) {
+      resetFailedAttempts();
+      onUnlock();
+    }
+  }, [checkLockout, resetFailedAttempts, onUnlock]);
 
   const handleUnlock = useCallback(async () => {
     if (!passphrase.trim()) {
@@ -135,6 +169,30 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
           </View>
         ) : (
           <View style={styles.inputContainer}>
+            {biometricEnabled && biometricLabel && (
+              <TouchableOpacity
+                style={styles.biometricButton}
+                onPress={handleBiometricUnlock}
+              >
+                <Icon
+                  name={biometricLabel.includes('Face') ? 'smile' : 'smartphone'}
+                  size={32}
+                  color={colors.primary}
+                />
+                <Text style={styles.biometricText}>
+                  Unlock with {biometricLabel}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {biometricEnabled && biometricLabel && (
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or enter passphrase</Text>
+                <View style={styles.dividerLine} />
+              </View>
+            )}
+
             <TextInput
               style={styles.input}
               value={passphrase}
@@ -182,92 +240,39 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
   );
 };
 
+const centered = { alignItems: 'center' as const, justifyContent: 'center' as const };
+
 const createStyles = (colors: ThemeColors, _shadows: ThemeShadows) => ({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center' as const,
-    padding: 24,
-  },
-  header: {
-    alignItems: 'center' as const,
-    marginBottom: SPACING.xxl,
-  },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { flex: 1, justifyContent: 'center' as const, padding: 24 },
+  header: { alignItems: 'center' as const, marginBottom: SPACING.xxl },
   lockIconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginBottom: SPACING.lg,
+    width: 96, height: 96, borderRadius: 8, borderWidth: 1,
+    borderColor: colors.border, backgroundColor: colors.surface,
+    ...centered, marginBottom: SPACING.lg,
   },
-  title: {
-    ...TYPOGRAPHY.h1,
-    color: colors.text,
-    marginBottom: SPACING.sm,
+  title: { ...TYPOGRAPHY.h1, color: colors.text, marginBottom: SPACING.sm },
+  subtitle: { ...TYPOGRAPHY.h2, color: colors.textSecondary, textAlign: 'center' as const },
+  inputContainer: { marginBottom: SPACING.xxl },
+  biometricButton: {
+    ...centered, paddingVertical: SPACING.lg, marginBottom: SPACING.md,
+    borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
   },
-  subtitle: {
-    ...TYPOGRAPHY.h2,
-    color: colors.textSecondary,
-    textAlign: 'center' as const,
-  },
-  inputContainer: {
-    marginBottom: SPACING.xxl,
-  },
+  biometricText: { ...TYPOGRAPHY.body, color: colors.primary, marginTop: SPACING.sm },
+  dividerRow: { flexDirection: 'row' as const, alignItems: 'center' as const, marginVertical: SPACING.md },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { ...TYPOGRAPHY.bodySmall, color: colors.textMuted, marginHorizontal: SPACING.md },
   input: {
-    ...TYPOGRAPHY.body,
-    backgroundColor: colors.surface,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: SPACING.lg,
-    color: colors.text,
-    marginBottom: SPACING.lg,
-    textAlign: 'center' as const,
+    ...TYPOGRAPHY.body, backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1,
+    borderColor: colors.border, padding: SPACING.lg, color: colors.text,
+    marginBottom: SPACING.lg, textAlign: 'center' as const,
   },
-  unlockButton: {
-    marginTop: SPACING.sm,
-  },
-  attemptsText: {
-    ...TYPOGRAPHY.body,
-    textAlign: 'center' as const,
-    color: colors.warning,
-    marginTop: SPACING.md,
-  },
-  lockoutContainer: {
-    alignItems: 'center' as const,
-    marginBottom: SPACING.xxl,
-  },
-  lockoutText: {
-    ...TYPOGRAPHY.h2,
-    color: colors.error,
-    marginBottom: SPACING.md,
-  },
-  lockoutTimer: {
-    ...TYPOGRAPHY.display,
-    fontSize: 48,
-    fontWeight: '200' as const,
-    color: colors.text,
-    marginBottom: SPACING.sm,
-  },
-  lockoutHint: {
-    ...TYPOGRAPHY.body,
-    color: colors.textSecondary,
-  },
-  footer: {
-    alignItems: 'center' as const,
-    opacity: 0.7,
-    gap: SPACING.sm,
-  },
-  footerText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: colors.textMuted,
-    textAlign: 'center' as const,
-  },
+  unlockButton: { marginTop: SPACING.sm },
+  attemptsText: { ...TYPOGRAPHY.body, textAlign: 'center' as const, color: colors.warning, marginTop: SPACING.md },
+  lockoutContainer: { alignItems: 'center' as const, marginBottom: SPACING.xxl },
+  lockoutText: { ...TYPOGRAPHY.h2, color: colors.error, marginBottom: SPACING.md },
+  lockoutTimer: { ...TYPOGRAPHY.display, fontSize: 48, fontWeight: '200' as const, color: colors.text, marginBottom: SPACING.sm },
+  lockoutHint: { ...TYPOGRAPHY.body, color: colors.textSecondary },
+  footer: { alignItems: 'center' as const, opacity: 0.7, gap: SPACING.sm },
+  footerText: { ...TYPOGRAPHY.bodySmall, color: colors.textMuted, textAlign: 'center' as const },
 });

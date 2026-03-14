@@ -10,6 +10,7 @@ import {
   parseOpenAIMessage,
   parseAnthropicMessage,
   isPrivateNetworkEndpoint,
+  enforceHttps,
   testEndpoint,
   fetchWithTimeout,
   imageToBase64DataUrl,
@@ -281,6 +282,40 @@ describe('httpClient', () => {
 
     it('should handle invalid URLs', () => {
       expect(isPrivateNetworkEndpoint('not-a-url')).toBe(false);
+    });
+  });
+
+  // ─── HTTPS Enforcement Tests ─────────────────────────────────────────────
+
+  describe('enforceHttps', () => {
+    it('should pass through HTTPS URLs unchanged', () => {
+      expect(enforceHttps('https://api.example.com/v1')).toBe('https://api.example.com/v1');
+    });
+
+    it('should allow HTTP for localhost', () => {
+      expect(enforceHttps('http://localhost:11434')).toBe('http://localhost:11434');
+    });
+
+    it('should allow HTTP for private IPs', () => {
+      expect(enforceHttps('http://192.168.1.50:11434')).toBe('http://192.168.1.50:11434');
+      expect(enforceHttps('http://10.0.0.1:8080')).toBe('http://10.0.0.1:8080');
+    });
+
+    it('should upgrade HTTP to HTTPS for public endpoints', () => {
+      expect(enforceHttps('http://api.openai.com/v1')).toBe('https://api.openai.com/v1');
+    });
+
+    it('should upgrade HTTP to HTTPS for public IPs', () => {
+      const result = enforceHttps('http://8.8.8.8:80');
+      expect(result).toMatch(/^https:\/\/8\.8\.8\.8/);
+    });
+
+    it('should throw for invalid URLs', () => {
+      expect(() => enforceHttps('not-a-url')).toThrow('Invalid endpoint URL');
+    });
+
+    it('should throw for unsupported protocols', () => {
+      expect(() => enforceHttps('ftp://example.com')).toThrow('Unsupported protocol');
     });
   });
 
