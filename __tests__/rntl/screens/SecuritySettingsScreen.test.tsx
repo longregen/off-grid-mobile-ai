@@ -48,13 +48,19 @@ jest.mock('../../../src/stores', () => ({
   }),
   useAuthStore: jest.fn(() => ({
     isEnabled: mockAuthEnabled,
+    biometricEnabled: false,
     setEnabled: mockSetEnabled,
+    setBiometricEnabled: jest.fn(),
   })),
 }));
 
 jest.mock('../../../src/services', () => ({
   authService: {
     removePassphrase: mockRemovePassphrase,
+    isBiometricAvailable: jest.fn(() => Promise.resolve({ available: false, biometryType: null })),
+    getBiometricLabel: jest.fn(() => 'Biometric'),
+    enableBiometric: jest.fn(() => Promise.resolve(true)),
+    disableBiometric: jest.fn(() => Promise.resolve(true)),
   },
 }));
 
@@ -192,7 +198,7 @@ describe('SecuritySettingsScreen', () => {
     it('shows info about passphrase being stored on device', () => {
       const { getByText } = render(<SecuritySettingsScreen />);
       expect(
-        getByText(/stored securely on device and never transmitted/i)
+        getByText(/hashed with SHA-256 and stored securely on device/i)
       ).toBeTruthy();
     });
   });
