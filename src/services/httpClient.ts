@@ -511,6 +511,45 @@ export function isPrivateNetworkEndpoint(endpoint: string): boolean {
 }
 
 /**
+ * Enforce HTTPS for non-private-network endpoints.
+ * Private/local endpoints (localhost, 192.168.x.x, etc.) are allowed over HTTP
+ * since local LLM servers (Ollama, LM Studio) typically don't use TLS.
+ * Public internet endpoints must use HTTPS.
+ *
+ * Returns the validated (possibly upgraded) URL, or throws if insecure.
+ */
+export function enforceHttps(endpoint: string): string {
+  try {
+    const url = new URL(endpoint);
+
+    // Already HTTPS — always allowed
+    if (url.protocol === 'https:') {
+      return endpoint;
+    }
+
+    // HTTP is allowed for private/local networks
+    if (url.protocol === 'http:' && isPrivateNetworkEndpoint(endpoint)) {
+      return endpoint;
+    }
+
+    // HTTP to public internet — upgrade to HTTPS
+    if (url.protocol === 'http:') {
+      url.protocol = 'https:';
+      logger.warn(`[HTTP] Upgrading insecure endpoint to HTTPS: ${endpoint} → ${url.toString()}`);
+      return url.toString().replace(/\/$/, '');
+    }
+
+    // Other protocols (ftp, etc.) are not allowed
+    throw new Error(`Unsupported protocol "${url.protocol}" — only HTTPS is allowed for remote servers`);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Unsupported protocol')) {
+      throw error;
+    }
+    throw new Error(`Invalid endpoint URL: ${endpoint}`);
+  }
+}
+
+/**
  * Check if endpoint URL is valid and reachable
  */
 export async function testEndpoint(

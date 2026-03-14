@@ -6,10 +6,17 @@
         <domain includeSubdomains="false">localhost</domain>
         <domain includeSubdomains="false">10.0.2.2</domain>
     </domain-config>
+    <!-- Allow cleartext for common local LLM server addresses (Ollama, LM Studio) -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.0.0</domain>
+        <domain includeSubdomains="true">10.0.0.0</domain>
+    </domain-config>
     <!-- All other domains require HTTPS (default for Android 9+) -->
+    <!-- Trust user-installed CAs for self-signed certs on local servers -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
+            <certificates src="user" />
         </trust-anchors>
     </base-config>
 </network-security-config>

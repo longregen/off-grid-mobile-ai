@@ -294,6 +294,32 @@ describe('authStore', () => {
   });
 
   // ============================================================================
+  // Biometric State
+  // ============================================================================
+  describe('biometric state', () => {
+    it('starts with biometric disabled', () => {
+      expect(getAuthState().biometricEnabled).toBe(false);
+    });
+
+    it('enables biometric', () => {
+      const { setBiometricEnabled } = useAuthStore.getState();
+
+      setBiometricEnabled(true);
+
+      expect(getAuthState().biometricEnabled).toBe(true);
+    });
+
+    it('disables biometric', () => {
+      const { setBiometricEnabled } = useAuthStore.getState();
+
+      setBiometricEnabled(true);
+      setBiometricEnabled(false);
+
+      expect(getAuthState().biometricEnabled).toBe(false);
+    });
+  });
+
+  // ============================================================================
   // Integration Scenarios
   // ============================================================================
   describe('integration scenarios', () => {

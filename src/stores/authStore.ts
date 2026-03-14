@@ -8,6 +8,7 @@ interface AuthState {
   failedAttempts: number;
   lockoutUntil: number | null;
   lastBackgroundTime: number | null;
+  biometricEnabled: boolean;
 
   // Actions
   setEnabled: (enabled: boolean) => void;
@@ -17,6 +18,7 @@ interface AuthState {
   setLastBackgroundTime: (time: number | null) => void;
   checkLockout: () => boolean; // Returns true if currently locked out
   getLockoutRemaining: () => number; // Returns seconds remaining
+  setBiometricEnabled: (enabled: boolean) => void;
 }
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -30,6 +32,7 @@ export const useAuthStore = create<AuthState>()(
       failedAttempts: 0,
       lockoutUntil: null,
       lastBackgroundTime: null,
+      biometricEnabled: false,
 
       setEnabled: (enabled) => {
         set({ isEnabled: enabled, isLocked: enabled });
@@ -83,6 +86,10 @@ export const useAuthStore = create<AuthState>()(
         const remaining = Math.max(0, lockoutUntil - Date.now());
         return Math.ceil(remaining / 1000);
       },
+
+      setBiometricEnabled: (enabled) => {
+        set({ biometricEnabled: enabled });
+      },
     }),
     {
       name: 'local-llm-auth-storage',
@@ -91,6 +98,7 @@ export const useAuthStore = create<AuthState>()(
         isEnabled: state.isEnabled,
         failedAttempts: state.failedAttempts,
         lockoutUntil: state.lockoutUntil,
+        biometricEnabled: state.biometricEnabled,
       }),
     }
   )

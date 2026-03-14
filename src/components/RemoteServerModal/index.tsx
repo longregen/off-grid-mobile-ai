@@ -21,7 +21,7 @@ import { AppSheet } from '../AppSheet';
 import { remoteServerManager } from '../../services/remoteServerManager';
 import { useRemoteServerStore } from '../../stores';
 import { RemoteServer, RemoteModel } from '../../types';
-import { isPrivateNetworkEndpoint } from '../../services/httpClient';
+import { isPrivateNetworkEndpoint, enforceHttps } from '../../services/httpClient';
 
 interface RemoteServerModalProps {
   visible: boolean;
@@ -265,11 +265,20 @@ export const RemoteServerModal: React.FC<RemoteServerModalProps> = ({
   const handleSave = useCallback(async () => {
     if (!validateForm()) return;
 
-    // Warn if connecting to public internet
+    // Enforce HTTPS for public endpoints, warn about public internet
     if (endpoint && !isPrivateNetworkEndpoint(endpoint)) {
+      try {
+        const secureEndpoint = enforceHttps(endpoint);
+        if (secureEndpoint !== endpoint) {
+          setEndpoint(secureEndpoint);
+        }
+      } catch {
+        Alert.alert('Invalid Endpoint', 'The endpoint URL is invalid or uses an unsupported protocol.');
+        return;
+      }
       Alert.alert(
         'Public Network Warning',
-        'This endpoint appears to be on the public internet. Your data will be sent to a remote server. Continue?',
+        'This endpoint is on the public internet and will use HTTPS. Your data will be sent to a remote server. Continue?',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Continue', onPress: () => saveServer() },

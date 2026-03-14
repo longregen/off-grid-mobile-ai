@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,13 +25,28 @@ export const SecuritySettingsScreen: React.FC = () => {
   const [showPassphraseSetup, setShowPassphraseSetup] = useState(false);
   const [isChangingPassphrase, setIsChangingPassphrase] = useState(false);
   const [alertState, setAlertState] = useState<AlertState>(initialAlertState);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState('Biometric');
   const { colors } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const {
     isEnabled: authEnabled,
+    biometricEnabled,
     setEnabled: setAuthEnabled,
+    setBiometricEnabled,
   } = useAuthStore();
+
+  useEffect(() => {
+    const checkBiometric = async () => {
+      const { available, biometryType } = await authService.isBiometricAvailable();
+      setBiometricAvailable(available);
+      if (available) {
+        setBiometricLabel(authService.getBiometricLabel(biometryType));
+      }
+    };
+    checkBiometric();
+  }, []);
 
   const handleTogglePassphrase = async () => {
     if (authEnabled) {
@@ -47,6 +62,7 @@ export const SecuritySettingsScreen: React.FC = () => {
               setAlertState(hideAlert());
               authService.removePassphrase().then(() => {
                 setAuthEnabled(false);
+                setBiometricEnabled(false);
               }).catch(() => {});
             },
           },
@@ -61,6 +77,23 @@ export const SecuritySettingsScreen: React.FC = () => {
   const handleChangePassphrase = () => {
     setIsChangingPassphrase(true);
     setShowPassphraseSetup(true);
+  };
+
+  const handleToggleBiometric = async () => {
+    if (biometricEnabled) {
+      await authService.disableBiometric();
+      setBiometricEnabled(false);
+    } else {
+      const success = await authService.enableBiometric();
+      if (success) {
+        setBiometricEnabled(true);
+      } else {
+        setAlertState(showAlert(
+          'Failed',
+          `Could not enable ${biometricLabel}. Please check your device settings.`
+        ));
+      }
+    }
   };
 
   return (
@@ -91,6 +124,23 @@ export const SecuritySettingsScreen: React.FC = () => {
             />
           </View>
 
+          {authEnabled && biometricAvailable && (
+            <View style={[styles.settingRow, { marginTop: SPACING.lg }]}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>{biometricLabel}</Text>
+                <Text style={styles.settingHint}>
+                  Use {biometricLabel.toLowerCase()} to unlock the app
+                </Text>
+              </View>
+              <Switch
+                value={biometricEnabled}
+                onValueChange={handleToggleBiometric}
+                trackColor={{ false: colors.surfaceLight, true: `${colors.primary  }80` }}
+                thumbColor={biometricEnabled ? colors.primary : colors.textMuted}
+              />
+            </View>
+          )}
+
           {authEnabled && (
             <Button
               title="Change Passphrase"
@@ -106,7 +156,11 @@ export const SecuritySettingsScreen: React.FC = () => {
         <Card style={styles.infoCard}>
           <Icon name="info" size={18} color={colors.textMuted} />
           <Text style={styles.infoText}>
-            When enabled, the app will lock automatically when you switch away or close it. Your passphrase is stored securely on device and never transmitted.
+            When enabled, the app will lock automatically when you switch away or close it.
+            Your passphrase is hashed with SHA-256 and stored securely on device.
+            {biometricAvailable
+              ? ` Enable ${biometricLabel} for faster, secure unlocking.`
+              : ''}
           </Text>
         </Card>
       </ScrollView>
