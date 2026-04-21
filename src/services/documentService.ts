@@ -9,6 +9,7 @@ import { MediaAttachment } from '../types';
 import { pdfExtractor } from './pdfExtractor';
 import { useAppStore } from '../stores';
 import { APP_CONFIG } from '../constants';
+import logger from '../utils/logger';
 
 // File extensions we can read as text
 const TEXT_EXTENSIONS = ['.txt', '.md', '.csv', '.json', '.xml', '.html', '.log', '.py', '.js', '.ts', '.jsx', '.tsx', '.java', '.c', '.cpp', '.h', '.swift', '.kt', '.go', '.rs', '.rb', '.php', '.sql', '.sh', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf'];
@@ -21,6 +22,20 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 // Persistent directory for attached documents
 const ATTACHMENTS_DIR = `${RNFS.DocumentDirectoryPath}/attachments`;
+
+/**
+ * Strip directory components and dangerous characters from a user-provided file name
+ * to prevent path traversal when joining with the attachments directory.
+ */
+function sanitizeAttachmentName(name: string): string {
+  // Remove any path separator or null byte; collapse parent-dir markers; strip leading dots.
+  const stripped = name
+    .replaceAll('\0', '')
+    .split(/[/\\]/)
+    .pop() || 'file';
+  const safe = stripped.replaceAll(/[^A-Za-z0-9._-]/g, '_').replace(/^\.+/, '');
+  return safe.length > 0 ? safe.slice(0, 200) : 'file';
+}
 
 class DocumentService {
   /**
@@ -50,59 +65,42 @@ class DocumentService {
    * - Note: Files from keepLocalCopy are already in app's Documents directory
    */
   private async resolveContentUri(uri: string, fileName: string): Promise<string> {
-    console.log(`[DocumentService] resolveContentUri input: ${uri}`);
-
-    // Check if this is a file from keepLocalCopy - it would be in our app's Documents directory
-    // keepLocalCopy returns paths like: file:///Users/.../App/Documents/filename
-    // RNFS.DocumentDirectoryPath is the app's Documents directory (without file://)
     const documentsPath = RNFS.DocumentDirectoryPath;
-
-    // Decode URL-encoded characters (like %20 for spaces) and strip file:// prefix
-    // This is critical because RNFS.exists() needs decoded paths, not URL-encoded
     const decodedUri = decodeURIComponent(uri);
     const cleanUri = decodedUri.replace(/^file:\/\//, '');
-    console.log(`[DocumentService] Decoded and cleaned path: ${cleanUri}`);
-    console.log(`[DocumentService] Documents path: ${documentsPath}`);
 
-    // Only skip copying if the file is exactly in our app's Documents directory
-    // This must be a precise match to avoid security-scoped URLs from document picker
+    // Only skip copying if the file is exactly in our app's Documents directory.
+    // Must be a precise prefix match to avoid security-scoped URLs from the picker.
     if (cleanUri.startsWith(documentsPath)) {
-      console.log(`[DocumentService] File is in app Documents directory, using directly`);
       return cleanUri;
     }
 
+    const safeName = sanitizeAttachmentName(fileName);
+
     // Android: content:// URIs
     if (Platform.OS === 'android' && uri.startsWith('content://')) {
-      const tempPath = `${RNFS.CachesDirectoryPath}/${Date.now()}_${fileName}`;
+      const tempPath = `${RNFS.CachesDirectoryPath}/${Date.now()}_${safeName}`;
       await RNFS.copyFile(uri, tempPath);
-      console.log(`[DocumentService] Copied Android content:// URI to: ${tempPath}`);
       return tempPath;
     }
 
-    // iOS: file:// URIs from document picker are security-scoped
-    // Copy to a temp location that we can access directly
+    // iOS: file:// URIs from document picker are security-scoped — copy to an accessible temp path.
     if (Platform.OS === 'ios' && uri.startsWith('file://')) {
-      const tempPath = `${RNFS.CachesDirectoryPath}/${Date.now()}_${fileName}`;
+      const tempPath = `${RNFS.CachesDirectoryPath}/${Date.now()}_${safeName}`;
       try {
-        // RNFS.copyFile can handle file:// URIs by copying the underlying file
         await RNFS.copyFile(uri, tempPath);
-        console.log(`[DocumentService] Copied iOS file:// URI to: ${tempPath}`);
         return tempPath;
-      } catch (_copyError) {
-        // If direct copy fails, try stripping the file:// prefix
+      } catch {
         const pathWithoutScheme = decodedUri.replace(/^file:\/\//, '');
         try {
           await RNFS.copyFile(pathWithoutScheme, tempPath);
-          console.log(`[DocumentService] Copied (fallback) to: ${tempPath}`);
           return tempPath;
         } catch {
-          console.error(`[DocumentService] Both copy attempts failed`);
-          throw new Error(`Could not access file. Please try selecting the file again.`);
+          throw new Error('Could not access file. Please try selecting the file again.');
         }
       }
     }
 
-    console.log(`[DocumentService] Returning URI as-is: ${uri}`);
     return uri;
   }
 
@@ -116,18 +114,16 @@ class DocumentService {
   }
 
   private async readContent(resolvedPath: string, isPdf: boolean, maxChars: number): Promise<string> {
-    console.log(`[DocumentService] readContent called - path: ${resolvedPath}, isPdf: ${isPdf}, maxChars: ${maxChars}`);
     try {
       const raw = isPdf
         ? await pdfExtractor.extractText(resolvedPath, maxChars)
         : await RNFS.readFile(resolvedPath, 'utf8');
-      console.log(`[DocumentService] Successfully read ${raw.length} characters`);
       if (raw.length > maxChars) {
         return `${raw.substring(0, maxChars)}\n\n... [Content truncated due to length]`;
       }
       return raw;
     } catch (error: any) {
-      console.error(`[DocumentService] Error reading content:`, error?.message || error);
+      logger.error('[DocumentService] Error reading content:', error?.message || error);
       throw error;
     }
   }
@@ -135,7 +131,12 @@ class DocumentService {
   private async savePersistentCopy(resolvedPath: string, originalPath: string, name: string): Promise<{ id: string; uri: string }> {
     await this.ensureAttachmentsDir();
     const id = Date.now().toString();
-    const persistentPath = `${ATTACHMENTS_DIR}/${id}_${name}`;
+    const safeName = sanitizeAttachmentName(name);
+    const persistentPath = `${ATTACHMENTS_DIR}/${id}_${safeName}`;
+    // Defense-in-depth: confirm the resolved persistent path stays within ATTACHMENTS_DIR.
+    if (!persistentPath.startsWith(`${ATTACHMENTS_DIR}/`)) {
+      throw new Error('Refusing to save attachment outside attachments directory');
+    }
     let ok = false;
     try {
       await RNFS.copyFile(resolvedPath, persistentPath);
@@ -151,46 +152,37 @@ class DocumentService {
    * Process a document from a file path
    */
   async processDocumentFromPath(filePath: string, fileName?: string, maxCharsOverride?: number): Promise<MediaAttachment | null> {
+    const name = fileName || filePath.split('/').pop() || 'document';
+    const extension = `.${name.split('.').pop()?.toLowerCase()}`;
+    const isPdf = extension === PDF_EXTENSION;
+    this.validateFileType(extension, isPdf);
+
+    const resolvedPath = await this.resolveContentUri(filePath, name);
+
+    // Verify the file exists and is accessible
+    let fileExists = false;
     try {
-      console.log(`[DocumentService] Processing document - filePath: ${filePath}, fileName: ${fileName}`);
-      const name = fileName || filePath.split('/').pop() || 'document';
-      const extension = `.${name.split('.').pop()?.toLowerCase()}`;
-      const isPdf = extension === PDF_EXTENSION;
-      console.log(`[DocumentService] Detected extension: ${extension}, isPdf: ${isPdf}`);
-      this.validateFileType(extension, isPdf);
-
-      const resolvedPath = await this.resolveContentUri(filePath, name);
-      console.log(`[DocumentService] Resolved path: ${resolvedPath}`);
-
-      // Verify the file exists and is accessible
-      let fileExists = false;
-      try {
-        fileExists = await RNFS.exists(resolvedPath);
-        console.log(`[DocumentService] File exists check: ${fileExists}`);
-      } catch (existsError) {
-        // RNFS.exists can fail on security-scoped URLs
-        console.error(`[DocumentService] exists() threw error:`, existsError);
-        throw new Error('Could not access file. Please try selecting the file again.');
-      }
-
-      if (!fileExists) {
-        throw new Error(`File not found: ${name}`);
-      }
-
-      const stat = await RNFS.stat(resolvedPath);
-      console.log(`[DocumentService] File size: ${stat.size} bytes`);
-      if (stat.size > MAX_FILE_SIZE) {
-        throw new Error(`File is too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB`);
-      }
-
-      const maxChars = maxCharsOverride ?? Math.floor((useAppStore.getState().settings.contextLength || APP_CONFIG.maxContextLength) * 4 * 0.5);
-      const textContent = await this.readContent(resolvedPath, isPdf, maxChars);
-      const { id, uri } = await this.savePersistentCopy(resolvedPath, filePath, name);
-
-      return { id, type: 'document', uri, fileName: name, textContent, fileSize: stat.size };
-    } catch (error: any) {
-      throw error;
+      fileExists = await RNFS.exists(resolvedPath);
+    } catch (existsError) {
+      // RNFS.exists can fail on security-scoped URLs
+      logger.error('[DocumentService] exists() threw error:', existsError);
+      throw new Error('Could not access file. Please try selecting the file again.');
     }
+
+    if (!fileExists) {
+      throw new Error(`File not found: ${name}`);
+    }
+
+    const stat = await RNFS.stat(resolvedPath);
+    if (stat.size > MAX_FILE_SIZE) {
+      throw new Error(`File is too large. Maximum size is ${MAX_FILE_SIZE / (1024 * 1024)}MB`);
+    }
+
+    const maxChars = maxCharsOverride ?? Math.floor((useAppStore.getState().settings.contextLength || APP_CONFIG.maxContextLength) * 4 * 0.5);
+    const textContent = await this.readContent(resolvedPath, isPdf, maxChars);
+    const { id, uri } = await this.savePersistentCopy(resolvedPath, filePath, name);
+
+    return { id, type: 'document', uri, fileName: name, textContent, fileSize: stat.size };
   }
 
   /**
@@ -206,12 +198,16 @@ class DocumentService {
     }
 
     const id = Date.now().toString();
+    const safeName = sanitizeAttachmentName(fileName);
 
     // Write to persistent file so it can be opened from chat
     let uri = '';
     try {
       await this.ensureAttachmentsDir();
-      const persistentPath = `${ATTACHMENTS_DIR}/${id}_${fileName}`;
+      const persistentPath = `${ATTACHMENTS_DIR}/${id}_${safeName}`;
+      if (!persistentPath.startsWith(`${ATTACHMENTS_DIR}/`)) {
+        throw new Error('Refusing to write attachment outside attachments directory');
+      }
       await RNFS.writeFile(persistentPath, text, 'utf8');
       uri = persistentPath;
     } catch {
@@ -265,3 +261,6 @@ class DocumentService {
 }
 
 export const documentService = new DocumentService();
+
+// Exposed for tests; do not use in app code.
+export const __testing = { sanitizeAttachmentName };

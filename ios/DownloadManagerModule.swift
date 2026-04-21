@@ -110,6 +110,34 @@ class DownloadManagerModule: RCTEventEmitter {
     return resolved.hasPrefix(documentsDir) || resolved.hasPrefix(cachesDir) || resolved.hasPrefix(tmpDir)
   }
 
+  /// Defense-in-depth allowlist for the JS bridge. Mirrors WorkerDownload.isHostAllowed on
+  /// Android. We only ever download model weights from HuggingFace.
+  private static let allowedDownloadHosts: Set<String> = [
+    "huggingface.co",
+    "cdn-lfs.huggingface.co",
+    "cas-bridge.xethub.hf.co"
+  ]
+
+  static func isDownloadUrlAllowed(_ url: URL) -> Bool {
+    guard let scheme = url.scheme?.lowercased(), scheme == "https" else { return false }
+    guard let host = url.host?.lowercased(), !host.isEmpty else { return false }
+    return allowedDownloadHosts.contains(where: { host == $0 || host.hasSuffix(".\($0)") })
+  }
+
+  /// Reject relative paths with `..`, absolute paths, or path-separator escapes that would
+  /// let a malicious payload write outside the destination directory.
+  static func isSafeRelativePath(_ relativePath: String) -> Bool {
+    if relativePath.isEmpty { return false }
+    if relativePath.hasPrefix("/") { return false }
+    if relativePath.contains("\0") { return false }
+    let components = relativePath.split(separator: "/", omittingEmptySubsequences: false)
+    for component in components {
+      if component == ".." { return false }
+      if component.hasPrefix("~") { return false }
+    }
+    return true
+  }
+
   // MARK: - RCTEventEmitter
 
   override init() {
@@ -400,6 +428,12 @@ extension DownloadManagerModule {
       return
     }
 
+    guard DownloadManagerModule.isDownloadUrlAllowed(url) else {
+      NSLog("[DownloadManager] startDownload: BLOCKED — host not in allowlist: %@", urlString)
+      reject("DOWNLOAD_HOST_NOT_ALLOWED", "Download URL host not allowed", nil)
+      return
+    }
+
     let totalBytes = (params["totalBytes"] as? NSNumber)?.int64Value ?? 0
     let downloadId = nextDownloadId
     nextDownloadId += 1
@@ -469,6 +503,12 @@ extension DownloadManagerModule {
       return
     }
 
+    guard DownloadManagerModule.isPathWithinAppSandbox(destinationDir) else {
+      NSLog("[DownloadManager] startMultiFileDownload: BLOCKED — destinationDir outside sandbox: %@", destinationDir)
+      reject("INVALID_DESTINATION", "destinationDir is outside the app sandbox", nil)
+      return
+    }
+
     let totalBytes = (params["totalBytes"] as? NSNumber)?.int64Value ?? 0
     let downloadId = nextDownloadId
     nextDownloadId += 1
@@ -487,6 +527,16 @@ extension DownloadManagerModule {
             let url = URL(string: urlString),
             let relativePath = fileInfo["relativePath"] as? String else {
         NSLog("[DownloadManager] Skipping file %d: missing url or relativePath", index)
+        continue
+      }
+
+      guard DownloadManagerModule.isDownloadUrlAllowed(url) else {
+        NSLog("[DownloadManager] Skipping file %d: host not in allowlist: %@", index, urlString)
+        continue
+      }
+
+      guard DownloadManagerModule.isSafeRelativePath(relativePath) else {
+        NSLog("[DownloadManager] Skipping file %d: relativePath would escape destination: %@", index, relativePath)
         continue
       }
 
@@ -639,6 +689,12 @@ extension DownloadManagerModule {
                                    rejecter reject: @escaping RCTPromiseRejectBlock) {
     let id = Int64(downloadId)
     NSLog("[DownloadManager] moveCompletedDownload #%lld -> %@", id, targetPath)
+
+    if !targetPath.isEmpty && !DownloadManagerModule.isPathWithinAppSandbox(targetPath) {
+      NSLog("[DownloadManager] moveCompletedDownload: BLOCKED — targetPath outside sandbox: %@", targetPath)
+      reject("INVALID_TARGET", "Target path is outside the app sandbox", nil)
+      return
+    }
 
     // Read download info with a short sync read, then do heavy I/O async
     // so the RN bridge thread is not blocked during large file moves.

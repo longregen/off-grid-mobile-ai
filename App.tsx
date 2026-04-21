@@ -188,6 +188,9 @@ function App() {
         setLocked(true);
       }
 
+      // Restore lockout state from Keychain so it survives an AsyncStorage wipe.
+      await useAuthStore.getState().hydrateLockoutFromSecureStore();
+
       // Initialize RAG database tables
       ragService.ensureReady().catch((err) => logger.error('Failed to initialize RAG service on startup', err));
 

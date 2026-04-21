@@ -6,6 +6,8 @@ const SERVICE_NAME = 'ai.offgridmobile.auth';
 const PASSPHRASE_KEY = 'passphrase_hash';
 const BIOMETRIC_SERVICE = 'ai.offgridmobile.biometric';
 const BIOMETRIC_KEY = 'biometric_enabled';
+const LOCKOUT_SERVICE = 'ai.offgridmobile.auth.lockout';
+const LOCKOUT_KEY = 'lockout_state';
 
 /** SHA-256 hash using simple but cryptographically adequate JS implementation */
 function sha256(message: string): string {
@@ -164,6 +166,7 @@ class AuthService {
         service: SERVICE_NAME,
       });
       await this.disableBiometric();
+      await this.resetLockoutState();
       return true;
     } catch (error) {
       logger.error('Failed to remove passphrase:', error);
@@ -251,6 +254,45 @@ class AuthService {
       return credentials !== false;
     } catch {
       return false;
+    }
+  }
+
+  // --- Lockout state (stored in Keychain so it cannot be cleared by wiping AsyncStorage) ---
+
+  /** Read lockout state from Keychain. Returns defaults if no record exists. */
+  async readLockoutState(): Promise<{ failedAttempts: number; lockoutUntil: number | null }> {
+    try {
+      const credentials = await Keychain.getGenericPassword({ service: LOCKOUT_SERVICE });
+      if (!credentials) return { failedAttempts: 0, lockoutUntil: null };
+      const parsed = JSON.parse(credentials.password) as { failedAttempts?: number; lockoutUntil?: number | null };
+      return {
+        failedAttempts: typeof parsed.failedAttempts === 'number' ? parsed.failedAttempts : 0,
+        lockoutUntil: typeof parsed.lockoutUntil === 'number' ? parsed.lockoutUntil : null,
+      };
+    } catch (error) {
+      logger.warn('Failed to read lockout state:', error);
+      return { failedAttempts: 0, lockoutUntil: null };
+    }
+  }
+
+  /** Persist lockout state to Keychain. Pass nulls/zeroes to reset. */
+  async writeLockoutState(state: { failedAttempts: number; lockoutUntil: number | null }): Promise<void> {
+    try {
+      await Keychain.setGenericPassword(LOCKOUT_KEY, JSON.stringify(state), {
+        service: LOCKOUT_SERVICE,
+        accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED,
+      });
+    } catch (error) {
+      logger.warn('Failed to write lockout state:', error);
+    }
+  }
+
+  /** Reset lockout state (after successful auth or removal of passphrase). */
+  async resetLockoutState(): Promise<void> {
+    try {
+      await Keychain.resetGenericPassword({ service: LOCKOUT_SERVICE });
+    } catch (error) {
+      logger.warn('Failed to reset lockout state:', error);
     }
   }
 

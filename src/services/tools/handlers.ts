@@ -297,11 +297,40 @@ async function handleGetDeviceInfo(infoType = 'all'): Promise<string> {
 
 /** Block SSRF: reject private/loopback/link-local/cloud-metadata URLs. */
 function isPrivateUrl(url: string): boolean {
-  const m = url.match(/^https?:\/\/([^/:]+)/i);
-  if (!m) return false;
-  const h = m[1].toLowerCase();
-  return h === 'localhost' || h === '[::1]' || h === 'metadata.google.internal'
-    || /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.|169\.254\.)/.test(h);
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  const protocol = parsed.protocol.toLowerCase();
+  if (protocol !== 'http:' && protocol !== 'https:') return true; // block file:, gopher:, etc.
+  const h = parsed.hostname.toLowerCase().replace(/^\[/, '').replace(/]$/, '');
+
+  // Cloud metadata endpoints
+  const metadataHosts = new Set([
+    'metadata.google.internal',
+    'metadata',
+    'metadata.aws',
+    'instance-data',
+    'instance-data.ec2.internal',
+  ]);
+  if (metadataHosts.has(h)) return true;
+
+  // IPv4 loopback / private / link-local / unspecified / cloud metadata
+  if (/^(127\.|10\.|192\.168\.|0\.|169\.254\.)/.test(h)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+
+  // IPv6 loopback / unique-local (fc00::/7) / link-local (fe80::/10) / unspecified
+  if (h === '::1' || h === '::' || h.startsWith('fc') || h.startsWith('fd') || h.startsWith('fe80')) return true;
+  // IPv4-mapped IPv6 (::ffff:a.b.c.d) — Node compresses to ::ffff:HHHH:HHHH (hex octets).
+  // Treat the entire mapped range as private to avoid platform-specific decoding bugs.
+  if (h.startsWith('::ffff:')) return true;
+
+  // Hostnames that should never resolve to public IPs
+  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.local') || h.endsWith('.internal')) return true;
+
+  return false;
 }
 
 async function handleReadUrl(rawUrl: string): Promise<string> {

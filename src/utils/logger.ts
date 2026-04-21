@@ -24,7 +24,19 @@ function formatArg(arg: unknown): string {
   }
 }
 
+/**
+ * Privacy: in production we only persist warnings/errors to disk, never `log`.
+ * Debug `log` lines can carry conversation excerpts, file paths, and remote-server
+ * URLs — they should not survive a process exit on a user's device. In dev we
+ * still capture everything to make troubleshooting easier.
+ */
+function shouldPersist(level: 'log' | 'warn' | 'error'): boolean {
+  if (__DEV__) return true;
+  return level === 'warn' || level === 'error';
+}
+
 function appendPersistentLog(level: 'log' | 'warn' | 'error', args: unknown[]): void {
+  if (!shouldPersist(level)) return;
   const timestamp = new Date().toISOString();
   const line = `[${timestamp}] ${level.toUpperCase()}: ${args.map(formatArg).join(' ')}\n`;
 
@@ -76,3 +88,4 @@ const logger = {
 };
 
 export default logger;
+export const __testing = { shouldPersist };
