@@ -49,8 +49,6 @@
 	<string>This app needs permission to save generated images to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to your photo library to attach images to conversations.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>This app uses on-device speech recognition to transcribe voice input.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>

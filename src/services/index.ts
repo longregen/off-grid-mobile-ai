@@ -5,7 +5,6 @@ export { llmService } from './llm';
 export { localDreamGeneratorService as onnxImageGeneratorService } from './localDreamGenerator';
 export { intentClassifier, classifyToolsNeeded } from './intentClassifier';
 export type { Intent } from './intentClassifier';
-export { voiceService } from './voiceService';
 export { authService } from './authService';
 export { fileIntegrityService } from './fileIntegrity';
 export type { IntegrityResult } from './fileIntegrity';
