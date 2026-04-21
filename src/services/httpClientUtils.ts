@@ -2,6 +2,8 @@
  * HTTP Client Utilities - image conversion, network validation, endpoint testing
  */
 
+import logger from '../utils/logger';
+
 function mimeTypeFromExtension(ext: string | undefined): string {
   if (ext === 'png') return 'image/png';
   if (ext === 'gif') return 'image/gif';
@@ -112,6 +114,39 @@ export function isPrivateNetworkEndpoint(endpoint: string): boolean {
     // Invalid URL - be conservative
     return false;
   }
+}
+
+/**
+ * Enforce HTTPS for non-private-network endpoints.
+ * Private/local endpoints (localhost, 192.168.x.x, etc.) are allowed over HTTP
+ * since local LLM servers (Ollama, LM Studio) typically don't use TLS.
+ * Public internet endpoints must use HTTPS.
+ *
+ * Returns the validated (possibly upgraded) URL, or throws if insecure.
+ */
+export function enforceHttps(endpoint: string): string {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    throw new Error(`Invalid endpoint URL: ${endpoint}`);
+  }
+
+  if (url.protocol === 'https:') {
+    return endpoint;
+  }
+
+  if (url.protocol === 'http:' && isPrivateNetworkEndpoint(endpoint)) {
+    return endpoint;
+  }
+
+  if (url.protocol === 'http:') {
+    url.protocol = 'https:';
+    logger.warn(`[HTTP] Upgrading insecure endpoint to HTTPS: ${endpoint} -> ${url.toString()}`);
+    return url.toString().replace(/\/$/, '');
+  }
+
+  throw new Error(`Unsupported protocol "${url.protocol}" - only HTTPS is allowed for remote servers`);
 }
 
 /**

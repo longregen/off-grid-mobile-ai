@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { remoteServerManager } from '../../services/remoteServerManager';
 import { useRemoteServerStore } from '../../stores';
 import { RemoteServer, RemoteModel } from '../../types';
-import { isPrivateNetworkEndpoint } from '../../services/httpClient';
+import { isPrivateNetworkEndpoint, enforceHttps } from '../../services/httpClient';
 import { AlertState, initialAlertState, showAlert } from '../CustomAlert';
 
 interface FormOptions {
@@ -117,11 +117,23 @@ export function useRemoteServerForm({ server, visible, onSave, onClose }: FormOp
 
   const handleSave = useCallback(async () => {
     if (!validateForm()) return;
-    // Warn if connecting to public internet
+    // Enforce HTTPS for public endpoints before saving
     if (endpoint && !isPrivateNetworkEndpoint(endpoint)) {
+      try {
+        const secureEndpoint = enforceHttps(endpoint);
+        if (secureEndpoint !== endpoint) {
+          setEndpoint(secureEndpoint);
+        }
+      } catch {
+        setAlertState(showAlert(
+          'Invalid Endpoint',
+          'The endpoint URL is invalid or uses an unsupported protocol.'
+        ));
+        return;
+      }
       setAlertState(showAlert(
         'Public Network Warning',
-        'This endpoint appears to be on the public internet. Your data will be sent to a remote server. Continue?',
+        'This endpoint appears to be on the public internet and will use HTTPS. Your data will be sent to a remote server. Continue?',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Continue', onPress: () => saveServer() },

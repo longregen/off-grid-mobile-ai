@@ -2,6 +2,7 @@ import RNFS from 'react-native-fs';
 import { ModelFile, BackgroundDownloadInfo } from '../../types';
 import { huggingFaceService } from '../huggingface';
 import { backgroundDownloadService } from '../backgroundDownloadService';
+import { fileIntegrityService } from '../fileIntegrity';
 import {
   DownloadProgressCallback,
   DownloadCompleteCallback,
@@ -253,8 +254,19 @@ export function watchBackgroundDownload(opts: WatchDownloadOpts): void {
       const mmProjFileExists = ctx.mmProjLocalPath ? await RNFS.exists(ctx.mmProjLocalPath) : false;
       const finalMmProjPath = ctx.mmProjLocalPath && mmProjFileExists ? ctx.mmProjLocalPath : undefined;
 
+      // Verify file integrity if SHA-256 hash is available from HuggingFace LFS
+      let integrityVerified: boolean | undefined;
+      if (ctx.file.sha256) {
+        logger.log(`[ModelManager] Verifying file integrity for ${ctx.file.name}...`);
+        const result = await fileIntegrityService.verifyFileIntegrity(finalPath, ctx.file.sha256);
+        integrityVerified = result.valid;
+        if (!result.valid) {
+          logger.warn(`[ModelManager] Integrity check failed for ${ctx.file.name} — file may be corrupted`);
+        }
+      }
+
       const model = await buildDownloadedModel({
-        modelId: ctx.modelId, file: ctx.file, resolvedLocalPath: finalPath, mmProjPath: finalMmProjPath,
+        modelId: ctx.modelId, file: ctx.file, resolvedLocalPath: finalPath, mmProjPath: finalMmProjPath, integrityVerified,
       });
       await persistDownloadedModel(model, modelsDir);
       backgroundDownloadMetadataCallback?.(downloadId, null);

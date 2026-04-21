@@ -31,6 +31,7 @@ export interface ModelFile {
   size: number;
   quantization: string;
   downloadUrl: string;
+  /** SHA-256 hash from HuggingFace LFS metadata for integrity verification */
   sha256?: string;
   // Companion mmproj for vision models
   mmProjFile?: {
@@ -56,6 +57,9 @@ export interface DownloadedModel {
   mmProjPath?: string;
   mmProjFileName?: string;
   mmProjFileSize?: number;
+  // File integrity
+  sha256?: string;
+  integrityVerified?: boolean;
 }
 
 export interface PersistedDownloadInfo {

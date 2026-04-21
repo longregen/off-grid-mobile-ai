@@ -7,6 +7,8 @@ export { intentClassifier, classifyToolsNeeded } from './intentClassifier';
 export type { Intent } from './intentClassifier';
 export { voiceService } from './voiceService';
 export { authService } from './authService';
+export { fileIntegrityService } from './fileIntegrity';
+export type { IntegrityResult } from './fileIntegrity';
 export { whisperService, WHISPER_MODELS } from './whisperService';
 export type { TranscriptionResult, TranscriptionCallback } from './whisperService';
 export { backgroundDownloadService } from './backgroundDownloadService';
@@ -28,6 +30,6 @@ export type { RagDocument, RagSearchResult, SearchResult, IndexProgress } from '
 export { providerRegistry, getProviderForServer, localProvider } from './providers';
 export type { LLMProvider, ProviderType, ProviderCapabilities, GenerationOptions, StreamCallbacks, CompletionResult } from './providers';
 // HTTP Client
-export { fetchWithTimeout, createStreamingRequest, imageToBase64DataUrl, testEndpoint, isPrivateNetworkEndpoint } from './httpClient';
+export { fetchWithTimeout, createStreamingRequest, imageToBase64DataUrl, testEndpoint, isPrivateNetworkEndpoint, enforceHttps } from './httpClient';
 // Remote Server Manager
 export { remoteServerManager } from './remoteServerManager';

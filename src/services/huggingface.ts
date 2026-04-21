@@ -98,7 +98,7 @@ class HuggingFaceService {
     };
   };
 
-  private transformFileInfo(modelId: string, file: { rfilename: string; size?: number; lfs?: { size: number; sha256: string } }): ModelFile {
+  private transformFileInfo(modelId: string, file: { rfilename: string; size?: number; lfs?: { size: number; sha256?: string } }): ModelFile {
     const fileName = file.rfilename;
     const size = file.lfs?.size || file.size || 0;
     const quantization = this.extractQuantization(fileName);
@@ -143,9 +143,9 @@ class HuggingFaceService {
 
   private findMatchingMMProj(
     modelFileName: string,
-    mmProjFiles: Array<{ path: string; size?: number; lfs?: { size: number } }>,
+    mmProjFiles: Array<{ path: string; size?: number; lfs?: { size: number; sha256?: string } }>,
     modelId: string
-  ): { name: string; size: number; downloadUrl: string } | undefined {
+  ): { name: string; size: number; downloadUrl: string; sha256?: string } | undefined {
     if (mmProjFiles.length === 0) {
       return undefined;
     }
@@ -162,6 +162,7 @@ class HuggingFaceService {
           name: mmProj.path,
           size: mmProj.lfs?.size || mmProj.size || 0,
           downloadUrl: this.getDownloadUrl(modelId, mmProj.path),
+          sha256: mmProj.lfs?.sha256,
         };
       }
     }
@@ -178,6 +179,7 @@ class HuggingFaceService {
       name: selectedMMProj.path,
       size: selectedMMProj.lfs?.size || selectedMMProj.size || 0,
       downloadUrl: this.getDownloadUrl(modelId, selectedMMProj.path),
+      sha256: selectedMMProj.lfs?.sha256,
     };
   }
 

@@ -168,10 +168,11 @@ export interface BuildModelOpts {
   file: ModelFile;
   resolvedLocalPath: string;
   mmProjPath?: string;
+  integrityVerified?: boolean;
 }
 
 export async function buildDownloadedModel(opts: BuildModelOpts): Promise<DownloadedModel> {
-  const { modelId, file, resolvedLocalPath, mmProjPath } = opts;
+  const { modelId, file, resolvedLocalPath, mmProjPath, integrityVerified } = opts;
   const stat = await RNFS.stat(resolvedLocalPath);
   const author = modelId.split('/')[0] || 'Unknown';
   const mmProjFile = file.mmProjFile;
@@ -199,6 +200,8 @@ export async function buildDownloadedModel(opts: BuildModelOpts): Promise<Downlo
     mmProjPath,
     mmProjFileName: mmProjPath ? mmProjFile?.name : undefined,
     mmProjFileSize,
+    sha256: file.sha256,
+    integrityVerified,
   };
 }
 
