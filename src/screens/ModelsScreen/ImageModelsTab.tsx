@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, TextInput, ActivityIndicator, TouchableOpacity, ScrollView, InteractionManager } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
-import { AttachStep, useSpotlightTour } from 'react-native-spotlight-tour';
+import { AttachStep, useSpotlightTour } from '../../components/onboarding/tour';
 import { ModelCard } from '../../components';
 import { consumePendingSpotlight } from '../../components/onboarding/spotlightState';
 import { useTheme, useThemedStyles } from '../../theme';

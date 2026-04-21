@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useSpotlightTour } from 'react-native-spotlight-tour';
+import { useSpotlightTour } from '../../components/onboarding/tour';
 import { CustomAlert, hideAlert, SharePromptSheet } from '../../components';
 import { consumePendingSpotlight } from '../../components/onboarding/spotlightState';
 import { subscribeSharePrompt } from '../../utils/sharePrompt';

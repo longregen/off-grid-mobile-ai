@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { useSpotlightTour } from 'react-native-spotlight-tour';
+import { useSpotlightTour } from '../../../components/onboarding/tour';
 import { STEP_TAB_MAP, STEP_INDEX_MAP, CHAT_INPUT_STEP_INDEX, MODEL_SETTINGS_STEP_INDEX, PROJECT_EDIT_STEP_INDEX, DOWNLOAD_FILE_STEP_INDEX, MODEL_PICKER_STEP_INDEX, IMAGE_LOAD_STEP_INDEX, IMAGE_DOWNLOAD_STEP_INDEX, IMAGE_NEW_CHAT_STEP_INDEX, IMAGE_DRAW_STEP_INDEX } from '../../../components/onboarding/spotlightConfig';
 import { setPendingSpotlight } from '../../../components/onboarding/spotlightState';
 import { useAppStore } from '../../../stores/appStore';

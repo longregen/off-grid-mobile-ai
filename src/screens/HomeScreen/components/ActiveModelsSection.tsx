@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { AttachStep } from 'react-native-spotlight-tour';
+import { AttachStep } from '../../../components/onboarding/tour';
 import { AnimatedPressable } from '../../../components/AnimatedPressable';
 import { useTheme, useThemedStyles } from '../../../theme';
 import { createStyles } from '../styles';

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
-import { AttachStep, useSpotlightTour } from 'react-native-spotlight-tour';
+import { AttachStep, useSpotlightTour } from '../../components/onboarding/tour';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../../components';
 import { CustomAlert, showAlert, hideAlert, AlertState, initialAlertState } from '../../components/CustomAlert';

@@ -355,8 +355,8 @@ jest.mock('react-native-zip-archive', () => ({
 // Mock react-native-vector-icons
 jest.mock('react-native-vector-icons/Feather', () => 'Icon');
 
-// react-native-spotlight-tour mock
-jest.mock('react-native-spotlight-tour', () => ({
+// Default mock for the internal tour module — individual tests can override.
+jest.mock('./src/components/onboarding/tour', () => ({
   SpotlightTourProvider: ({ children }: { children: React.ReactNode }) => children,
   AttachStep: ({ children }: { children: React.ReactNode }) => children,
   useSpotlightTour: () => ({

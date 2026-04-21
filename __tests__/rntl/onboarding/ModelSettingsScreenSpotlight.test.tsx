@@ -18,7 +18,7 @@ import {
   peekPendingSpotlight,
 } from '../../../src/components/onboarding/spotlightState';
 
-jest.mock('react-native-spotlight-tour', () =>
+jest.mock('../../../src/components/onboarding/tour', () =>
   require('../../utils/spotlightMocks').createSpotlightTourMock()
 );
 
