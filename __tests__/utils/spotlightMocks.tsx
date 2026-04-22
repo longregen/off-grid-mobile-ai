@@ -3,7 +3,7 @@
  *
  * Usage:
  *   import { mockGoTo, ... } from '../../utils/spotlightMocks';
- *   jest.mock('react-native-spotlight-tour', () =>
+ *   jest.mock('../../../src/components/onboarding/tour', () =>
  *     require('../../utils/spotlightMocks').createSpotlightTourMock()
  *   );
  *
@@ -20,7 +20,7 @@ export const mockStop = jest.fn();
 export const mockNavigate = jest.fn();
 export const mockGoBack = jest.fn();
 
-// ─── react-native-spotlight-tour ───────────────────────────────────
+// ─── onboarding/tour (internal module) ─────────────────────────────
 export function createSpotlightTourMock() {
   return {
     SpotlightTourProvider: ({ children }: { children: React.ReactNode }) => children,

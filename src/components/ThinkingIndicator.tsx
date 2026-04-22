@@ -47,7 +47,8 @@ export const ThinkingIndicator: React.FC<ThinkingIndicatorProps> = ({
       sequence2.stop();
       sequence3.stop();
     };
-
+    // Animation driven values are stable refs; run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

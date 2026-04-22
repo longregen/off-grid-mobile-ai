@@ -15,7 +15,7 @@ import { resetStores } from '../../utils/testHelpers';
 import { createDownloadedModel } from '../../utils/factories';
 import { mockGoTo, clearSpotlightMocks } from '../../utils/spotlightMocks';
 
-jest.mock('react-native-spotlight-tour', () =>
+jest.mock('../../../src/components/onboarding/tour', () =>
   require('../../utils/spotlightMocks').createSpotlightTourMock()
 );
 

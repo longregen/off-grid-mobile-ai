@@ -45,7 +45,10 @@ export async function validateModelFile(modelPath: string): Promise<{ valid: boo
     try {
       const versionBytes = await RNFS.read(modelPath, 4, 4, 'ascii');
       if (versionBytes) {
+        // Parse little-endian uint32 from 4 bytes; bitwise is required for byte-level decoding
+        // eslint-disable-next-line no-bitwise
         const version = versionBytes.charCodeAt(0) | (versionBytes.charCodeAt(1) << 8) |
+          // eslint-disable-next-line no-bitwise
           (versionBytes.charCodeAt(2) << 16) | (versionBytes.charCodeAt(3) << 24);
         logger.log(`[LLM] GGUF version: ${version}`);
       }

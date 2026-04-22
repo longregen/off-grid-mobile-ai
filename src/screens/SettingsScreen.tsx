@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
-import { AttachStep } from 'react-native-spotlight-tour';
+import { AttachStep } from '../components/onboarding/tour';
 import { useNavigation, CommonActions, CompositeNavigationProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -50,7 +50,8 @@ export const SettingsScreen: React.FC = () => {
 
   useEffect(() => {
     completeChecklistStep('exploredSettings');
-
+    // completeChecklistStep is a stable zustand action; mark the step once when the screen mounts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSendFeedback = async () => {

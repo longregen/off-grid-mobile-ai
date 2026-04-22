@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { View, FlatList, Text, Keyboard, ActivityIndicator, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { AttachStep } from 'react-native-spotlight-tour';
+import { AttachStep } from '../../components/onboarding/tour';
 import { ChatInput, ToolPickerSheet, ThinkingIndicator } from '../../components';
 import { AnimatedPressable } from '../../components/AnimatedPressable';
 import { generationService } from '../../services';

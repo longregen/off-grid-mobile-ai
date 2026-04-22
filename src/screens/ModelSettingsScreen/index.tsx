@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
-import { AttachStep, useSpotlightTour } from 'react-native-spotlight-tour';
+import { AttachStep, useSpotlightTour } from '../../components/onboarding/tour';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../../components';
 import { CustomAlert, showAlert, hideAlert, AlertState, initialAlertState } from '../../components/CustomAlert';
@@ -33,6 +33,8 @@ export const ModelSettingsScreen: React.FC = () => {
       const task = InteractionManager.runAfterInteractions(() => goTo(pending));
       return () => task.cancel();
     }
+    // Run once on mount to consume a pending spotlight hand-off
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleReset = () => {

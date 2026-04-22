@@ -24,7 +24,7 @@ import {
 // Capture current state for step-chaining tests
 let mockCurrent: number | undefined = 0;
 
-jest.mock('react-native-spotlight-tour', () => {
+jest.mock('../../../src/components/onboarding/tour', () => {
   const mocks = require('../../utils/spotlightMocks');
   return {
     ...mocks.createSpotlightTourMock(),

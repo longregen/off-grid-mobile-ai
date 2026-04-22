@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import type { TourStep } from 'react-native-spotlight-tour';
+import type { TourStep } from './tour';
 import { useTheme } from '../../theme';
 import { TYPOGRAPHY, SPACING, FONTS } from '../../constants';
 

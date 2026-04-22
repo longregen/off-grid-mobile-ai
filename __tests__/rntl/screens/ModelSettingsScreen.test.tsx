@@ -913,6 +913,7 @@ describe('ModelSettingsScreen', () => {
     });
 
     // HTP is currently disabled via HTP_UI_ENABLED feature flag
+    // eslint-disable-next-line jest/no-disabled-tests
     it.skip('locks KV cache display to f16 on HTP backend', () => {
       useAppStore.getState().updateSettings({ inferenceBackend: 'htp', cacheType: 'q4_0' });
       const { getByText } = renderWithSections('text');

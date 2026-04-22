@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, InteractionManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { useSpotlightTour } from 'react-native-spotlight-tour';
+import { useSpotlightTour } from '../../components/onboarding/tour';
 import { CustomAlert, hideAlert, SharePromptSheet } from '../../components';
 import { consumePendingSpotlight } from '../../components/onboarding/spotlightState';
 import { subscribeSharePrompt } from '../../utils/sharePrompt';
@@ -55,6 +55,8 @@ export const ChatScreen: React.FC = () => {
       const task = InteractionManager.runAfterInteractions(() => goTo(pending));
       return () => task.cancel();
     }
+    // Run once on mount to consume a pending spotlight hand-off from onboarding
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const chainingRef = useRef(false);
   // When the spotlight tour stops after step 3, fire the chained step 12

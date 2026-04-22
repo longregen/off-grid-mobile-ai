@@ -60,7 +60,8 @@ function App() {
 
   useEffect(() => {
     initializeApp();
-
+    // initializeApp runs once on mount - adding it as a dep would retrigger on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const ensureAppStoreHydrated = async () => {
@@ -187,6 +188,9 @@ function App() {
       if (hasPassphrase && authEnabled) {
         setLocked(true);
       }
+
+      // Restore lockout state from Keychain so it survives an AsyncStorage wipe.
+      await useAuthStore.getState().hydrateLockoutFromSecureStore();
 
       // Initialize RAG database tables
       ragService.ensureReady().catch((err) => logger.error('Failed to initialize RAG service on startup', err));

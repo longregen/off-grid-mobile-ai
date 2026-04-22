@@ -262,7 +262,8 @@ export function useChatImageModelEffects(deps: ImageModelEffectsDeps): void {
       }
     }, 0);
     return () => { cancelled = true; clearTimeout(timer); };
-
+    // setDownloadedImageModels is a stable zustand setter; populate once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     let cancelled = false;
@@ -282,7 +283,8 @@ export function useChatImageModelEffects(deps: ImageModelEffectsDeps): void {
     };
     preload();
     return () => { cancelled = true; };
-
+    // downloadedModels is read lazily inside preload; its changes should not re-trigger preload
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.imageGenerationMode, settings.autoDetectMethod, settings.classifierModelId, activeImageModelId, settings.modelLoadingStrategy]);
 }
 
@@ -303,7 +305,8 @@ export function useChatModelStateSync(deps: ModelStateSyncDeps): void {
   useEffect(() => {
     if (activeModelInfo.isRemote) return;
     if (activeModelId && activeModel) { ensureModelLoadedFn(modelDeps); }
-
+    // modelDeps is a rebuilt-each-render bag; re-run only when the active model identity changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeModelId, activeModel?.mmProjPath]);
   useEffect(() => {
     if (activeModelInfo.isRemote) {
@@ -313,7 +316,8 @@ export function useChatModelStateSync(deps: ModelStateSyncDeps): void {
     } else {
       setSupportsVision(false);
     }
-
+    // setSupportsVision is a stable zustand setter
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeModelInfo.isRemote, activeRemoteModel?.capabilities?.supportsVision, activeModel?.mmProjPath, isModelLoading]);
   useEffect(() => {
     if (activeRemoteTextModelId) {
@@ -326,6 +330,7 @@ export function useChatModelStateSync(deps: ModelStateSyncDeps): void {
       setSupportsToolCalling(false);
       setSupportsThinking(false);
     }
-
+    // setSupportsToolCalling/Thinking are stable zustand setters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeModelId, isModelLoading, activeRemoteTextModelId, activeRemoteModel?.capabilities?.supportsToolCalling, activeRemoteModel?.capabilities?.supportsThinking]);
 }

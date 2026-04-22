@@ -24,7 +24,8 @@ export function BlinkingCursor() {
       -1,
       false,
     );
-
+    // opacity is a shared value whose identity is stable across renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reducedMotion]);
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (

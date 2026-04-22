@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, FlatList, TextInput, ActivityIndicator, RefreshControl, TouchableOpacity, InteractionManager } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { AttachStep, useSpotlightTour } from 'react-native-spotlight-tour';
+import { AttachStep, useSpotlightTour } from '../../components/onboarding/tour';
 import { Card, ModelCard } from '../../components';
 import { AnimatedEntry } from '../../components/AnimatedEntry';
 import { CustomAlert, hideAlert } from '../../components/CustomAlert';

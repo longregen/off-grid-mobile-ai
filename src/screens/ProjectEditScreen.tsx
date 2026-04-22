@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AttachStep, useSpotlightTour } from 'react-native-spotlight-tour';
+import { AttachStep, useSpotlightTour } from '../components/onboarding/tour';
 import { CustomAlert, showAlert, hideAlert, AlertState, initialAlertState } from '../components/CustomAlert';
 import { consumePendingSpotlight } from '../components/onboarding/spotlightState';
 import { useTheme, useThemedStyles } from '../theme';
@@ -43,6 +43,8 @@ export const ProjectEditScreen: React.FC = () => {
       const task = InteractionManager.runAfterInteractions(() => goTo(pending));
       return () => task.cancel();
     }
+    // Run once on mount to consume a pending spotlight hand-off
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [formData, setFormData] = useState({

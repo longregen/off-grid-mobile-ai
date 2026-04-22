@@ -216,18 +216,6 @@ jest.mock('react-native-keychain', () => ({
   resetGenericPassword: jest.fn(() => Promise.resolve(true)),
 }));
 
-// @react-native-voice/voice mock
-jest.mock('@react-native-voice/voice', () => ({
-  start: jest.fn(() => Promise.resolve()),
-  stop: jest.fn(() => Promise.resolve()),
-  destroy: jest.fn(() => Promise.resolve()),
-  isAvailable: jest.fn(() => Promise.resolve(true)),
-  onSpeechStart: null,
-  onSpeechEnd: null,
-  onSpeechResults: null,
-  onSpeechError: null,
-}));
-
 // @react-native-documents/picker mock
 jest.mock('@react-native-documents/picker', () => ({
   pick: jest.fn(() => Promise.resolve([{
@@ -343,25 +331,6 @@ jest.mock('react-native-haptic-feedback', () => ({
   trigger: jest.fn(),
 }));
 
-// @react-native-community/blur mock
-jest.mock('@react-native-community/blur', () => ({
-  BlurView: 'BlurView',
-}));
-
-// lottie-react-native mock
-jest.mock('lottie-react-native', () => 'LottieView');
-
-// react-native-linear-gradient mock
-jest.mock('react-native-linear-gradient', () => 'LinearGradient');
-
-// moti mock (kept for any transitive imports)
-jest.mock('moti', () => ({
-  MotiView: 'MotiView',
-  MotiText: 'MotiText',
-  MotiImage: 'MotiImage',
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
-}), { virtual: true });
-
 // @op-engineering/op-sqlite mock
 jest.mock('@op-engineering/op-sqlite', () => {
   const mockResults = { rows: [], insertId: 0, rowsAffected: 0 };
@@ -386,8 +355,8 @@ jest.mock('react-native-zip-archive', () => ({
 // Mock react-native-vector-icons
 jest.mock('react-native-vector-icons/Feather', () => 'Icon');
 
-// react-native-spotlight-tour mock
-jest.mock('react-native-spotlight-tour', () => ({
+// Default mock for the internal tour module — individual tests can override.
+jest.mock('./src/components/onboarding/tour', () => ({
   SpotlightTourProvider: ({ children }: { children: React.ReactNode }) => children,
   AttachStep: ({ children }: { children: React.ReactNode }) => children,
   useSpotlightTour: () => ({

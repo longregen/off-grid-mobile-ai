@@ -212,6 +212,8 @@ export const AppSheet: React.FC<AppSheetProps> = ({
     } else if (modalVisible) {
       animateOut(() => setModalVisible(false));
     }
+    // Only react to external visibility toggles; modalVisible/animateOut are read at fire time
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   // Track keyboard height so the sheet lifts above the keyboard
