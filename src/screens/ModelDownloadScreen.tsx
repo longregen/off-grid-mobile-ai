@@ -106,6 +106,8 @@ export const ModelDownloadScreen: React.FC<Props> = ({ navigation }) => {
       }
     })();
     return () => { cancelled = true; };
+    // setDeviceInfo/setModelRecommendation are stable zustand setters; run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Health-check persisted servers — only show reachable ones

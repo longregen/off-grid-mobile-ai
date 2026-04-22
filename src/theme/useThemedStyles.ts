@@ -18,7 +18,8 @@ export function useThemedStyles<T extends StyleSheet.NamedStyles<T>>(
   const { colors, shadows, isDark } = useTheme();
   return useMemo(
     () => StyleSheet.create(factory(colors, shadows)),
-
+    // colors/shadows/factory change every render; isDark is the authoritative theme key
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isDark],
   );
 }

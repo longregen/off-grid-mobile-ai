@@ -91,7 +91,7 @@ export const useWhisperTranscription = (): UseWhisperTranscriptionResult => {
       setPartialResult('');
       transcribingStartTime.current = null;
     }
-  }, []);
+  }, [mountedRef]);
 
   // Extra recording time after user releases button (ms)
   // Whisper needs trailing audio/silence to properly process speech
@@ -134,7 +134,7 @@ export const useWhisperTranscription = (): UseWhisperTranscriptionResult => {
         transcribingStartTime.current = null;
       }
     }
-  }, []);
+  }, [mountedRef]);
 
   const clearResult = useCallback(() => {
     setFinalResult('');
@@ -229,7 +229,7 @@ export const useWhisperTranscription = (): UseWhisperTranscriptionResult => {
         Vibration.vibrate([0, 50, 50, 50]);
       }
     }
-  }, [downloadedModelId, loadModel, isRecording, stopRecording, finalizeTranscription]);
+  }, [downloadedModelId, loadModel, isRecording, stopRecording, finalizeTranscription, mountedRef]);
 
   return {
     isRecording,

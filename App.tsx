@@ -60,7 +60,8 @@ function App() {
 
   useEffect(() => {
     initializeApp();
-
+    // initializeApp runs once on mount - adding it as a dep would retrigger on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const ensureAppStoreHydrated = async () => {

@@ -43,6 +43,8 @@ export const ProjectEditScreen: React.FC = () => {
       const task = InteractionManager.runAfterInteractions(() => goTo(pending));
       return () => task.cancel();
     }
+    // Run once on mount to consume a pending spotlight hand-off
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [formData, setFormData] = useState({

@@ -62,7 +62,8 @@ const TabBarIcon: React.FC<{ name: string; focused: boolean }> = ({ name, focuse
 
   useEffect(() => {
     scale.value = withSpring(focused ? 1.1 : 1, { damping: 15, stiffness: 150 });
-
+    // scale is a shared value with a stable identity across renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focused]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -128,6 +129,7 @@ const MainTabs: React.FC = () => {
           },
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.textMuted,
+          // eslint-disable-next-line react/no-unstable-nested-components
           tabBarIcon: ({ focused }) => (
             <TabBarIcon name={route.name} focused={focused} />
           ),

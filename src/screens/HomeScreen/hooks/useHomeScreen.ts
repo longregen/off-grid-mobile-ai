@@ -144,7 +144,8 @@ export const useHomeScreen = (navigation: HomeScreenNavigationProp) => {
     });
     isFirstMount.current = false;
     return () => task.cancel();
-
+    // Mount-once bootstrap: loadData and runLANDiscovery run exactly once per screen lifecycle
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const refreshMemoryInfo = useCallback(async () => {

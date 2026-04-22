@@ -77,7 +77,8 @@ const SlideContent: React.FC<{
         descOpacity.value = withDelay(550, withTiming(1, { duration: 400, easing: ease }));
         descTranslateY.value = withDelay(550, withTiming(0, { duration: 400, easing: ease }));
       }
-
+      // Shared values are stable refs; re-run only when the slide becomes active
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isActive]);
 
     const keywordStyle = useAnimatedStyle(() => ({

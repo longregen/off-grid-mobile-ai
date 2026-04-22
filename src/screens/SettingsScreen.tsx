@@ -50,7 +50,8 @@ export const SettingsScreen: React.FC = () => {
 
   useEffect(() => {
     completeChecklistStep('exploredSettings');
-
+    // completeChecklistStep is a stable zustand action; mark the step once when the screen mounts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSendFeedback = async () => {

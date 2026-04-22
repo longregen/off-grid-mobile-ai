@@ -43,7 +43,8 @@ export const RemoteServersScreen: React.FC = () => {
     servers.forEach(server => {
       testConnection(server.id).catch(() => { });
     });
-
+    // Kick off status checks once on mount; list updates are handled by later user actions
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTestServer = useCallback(async (serverId: string) => {
